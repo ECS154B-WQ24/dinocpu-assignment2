@@ -46,8 +46,71 @@ class SingleCycleCPU(implicit val conf: CPUConfig) extends BaseCPU {
 
   // Your code goes here
 
-}
+  pc := pc + 4.U
 
+  control.io.opcode := instruction(6, 0) // control inputs
+
+  immGen.io.instruction := instruction // immgen input
+
+  aluControl.io.aluop := control.io.aluop // alu control inputs
+  aluControl.io.arth_type := control.io.arth_type
+  aluControl.io.int_length := control.io.int_length
+  aluControl.io.funct7 := instruction(31, 25)
+  aluControl.io.funct3 := instruction(14, 12)
+  
+  alu.io.operation := aluControl.io.operation // alu inputs
+  switch(control.io.op1_src){ 
+    is(0.U){
+      alu.io.operand1 := registers.io.readdata1
+    }
+    is(1.U){
+      alu.io.operand1 := pc
+    }
+  }
+  switch(control.io.op2_src){
+    is(0.U){
+      alu.io.operand2 := registers.io.readdata2
+    }
+    is(1.U){
+      alu.io.operand2 := immGen.io.sextImm 
+    }
+    is(2.U){
+      alu.io.operand2 := 4.U
+    }
+  }
+
+  
+  io.dmem.address := alu.io.result // data memory inputs new
+  io.dmem.memread := control.io.memop === 1.U
+  io.dmem.memwrite := control.io.memop === 2.U
+  io.dmem.valid := control.io.memop > 0.U
+  io.dmem.maskmode := instruction(14, 12)
+  io.dmem.sext := instruction(14, 12) < 2.U
+  io.dmem.writedata := registers.io.readdata2
+  
+  
+  
+  registers.io.readreg2 := instruction(24, 20) // register inputs
+  registers.io.readreg1 := instruction(19, 15)
+  registers.io.writereg := instruction(11, 7)
+  registers.io.wen := (control.io.writeback_src =/= 0.U) && (registers.io.writereg =/= 0.U)
+  switch(control.io.writeback_src){ //new
+    is(1.U){
+      registers.io.writedata := alu.io.result
+    }
+    is(2.U){
+      registers.io.writedata := immGen.io.sextImm
+    }
+    is(3.U){
+      registers.io.writedata := io.dmem.readdata
+    }
+  }
+  
+
+  
+
+  
+}
 /*
  * Object to make it easier to print information about the CPU
  */
@@ -63,7 +126,6 @@ object SingleCycleCPUInfo {
       "alu",
       "immGen",
       "jumpDetection",
-      "jumpPcGen"
     )
   }
 }

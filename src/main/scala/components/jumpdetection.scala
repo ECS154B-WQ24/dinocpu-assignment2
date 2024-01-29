@@ -40,4 +40,28 @@ class JumpDetectionUnit extends Module {
   io.taken := false.B
 
   // Your code goes here
+  /*
+  switch(io.jumpop) {
+    is(1.U) { // jal
+      io.pc_plus_offset := true.B
+      io.taken := true.B
+    }
+    is(2.U) { // jalr
+      io.op1_plus_offset := true.B
+      io.taken := true.B
+    }
+    is(3.U) { // branch instructions
+      // Determine if the branch is taken based on funct3 and operands
+      io.taken := MuxCase(false.B, Array(
+        (io.funct3 === 0.U) -> (io.operand1 === io.operand2),  // BEQ: Branch if Equal
+        (io.funct3 === 1.U) -> (io.operand1 =/= io.operand2),  // BNE: Branch if Not Equal
+        (io.funct3 === 4.U) -> (io.operand1.asSInt < io.operand2.asSInt), // BLT: Branch if Less Than (signed)
+        (io.funct3 === 5.U) -> (io.operand1.asSInt >= io.operand2.asSInt), // BGE: Branch if Greater Than or Equal (signed)
+        (io.funct3 === 6.U) -> (io.operand1 < io.operand2),  // BLTU: Branch if Less Than (unsigned)
+        (io.funct3 === 7.U) -> (io.operand1 >= io.operand2)  // BGEU: Branch if Greater Than or Equal (unsigned)
+      ))
+    }
+  }
+  */
 }
+
