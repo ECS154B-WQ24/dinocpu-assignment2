@@ -46,6 +46,69 @@ class SingleCycleCPU(implicit val conf: CPUConfig) extends BaseCPU {
 
   // Your code goes here
 
+  val funct3 = Wire(UInt(3.W))
+  val funct7 = Wire(UInt(7.W))
+
+  funct3 := instruction(14, 12)
+  funct7 := instruction(31, 25)
+
+
+  immGen.io.instruction := instruction
+
+  control.io.opcode := instruction(6, 0)
+
+  registers.io.readreg1 := instruction(19, 15)
+  registers.io.readreg2 := instruction(24, 20)
+  registers.io.writereg := instruction(11, 7)
+  registers.io.writedata := MuxCase(
+    0.U, // default value
+    Array(
+    (control.io.writeback_src===1.U) -> alu.io.result, 
+    (control.io.writeback_src===2.U) -> immGen.io.sextImm,
+    (control.io.writeback_src===3.U) ->io.dmem.readdata))
+  registers.io.wen := (control.io.writeback_src =/= 0.U & registers.io.writereg =/= 0.U)
+
+  aluControl.io.aluop := control.io.aluop
+  aluControl.io.arth_type := control.io.arth_type
+  aluControl.io.int_length := control.io.int_length
+  aluControl.io.funct3 := funct3
+  aluControl.io.funct7 := funct7
+
+  alu.io.operation := aluControl.io.operation
+  alu.io.operand1 := Mux(control.io.op1_src===0.U, registers.io.readdata1, pc)
+  alu.io.operand2 := MuxCase(
+    0.U, // default value
+    Array(
+    (control.io.op2_src===0.U) -> registers.io.readdata2, 
+    (control.io.op2_src===1.U) -> immGen.io.sextImm,
+    (control.io.op2_src===2.U) -> 4.U
+    )
+  )
+
+  io.dmem.address := alu.io.result
+  io.dmem.writedata := registers.io.readdata2
+  io.dmem.memread := control.io.memop === 1.U
+  io.dmem.memwrite := control.io.memop === 2.U
+  io.dmem.valid := control.io.memop =/= 0.U
+  io.dmem.sext := ~funct3(2)
+  io.dmem.maskmode := funct3(1, 0)
+
+  jumpDetection.io.jumpop := control.io.jumpop
+  jumpDetection.io.operand1 := registers.io.readdata1
+  jumpDetection.io.operand2 := registers.io.readdata2
+  jumpDetection.io.funct3 := funct3
+
+  jumpPcGen.io.pc := pc
+  jumpPcGen.io.pc_plus_offset := jumpDetection.io.pc_plus_offset
+  jumpPcGen.io.op1_plus_offset := jumpDetection.io.op1_plus_offset
+  jumpPcGen.io.offset := immGen.io.sextImm
+  jumpPcGen.io.op1 := registers.io.readdata1
+
+  pc := Mux(jumpDetection.io.taken,
+    jumpPcGen.io.jumppc,
+    pc + 4.U
+  )
+
 }
 
 /*

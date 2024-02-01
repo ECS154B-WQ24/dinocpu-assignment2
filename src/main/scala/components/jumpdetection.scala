@@ -40,4 +40,39 @@ class JumpDetectionUnit extends Module {
   io.taken := false.B
 
   // Your code goes here
+
+  when(io.jumpop === 1.U) {
+    io.taken := true.B
+    io.pc_plus_offset := true.B
+  }
+  .elsewhen(io.jumpop === 2.U) {
+    io.taken := true.B
+    io.op1_plus_offset := true.B
+  }
+  .elsewhen(io.jumpop === 3.U) {
+    when((io.funct3 === "b000".U) & (io.operand1.asSInt === io.operand2.asSInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+    .elsewhen((io.funct3 === "b001".U) & (io.operand1.asSInt =/= io.operand2.asSInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+    .elsewhen((io.funct3 === "b100".U) & (io.operand1.asSInt < io.operand2.asSInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+    .elsewhen((io.funct3 === "b101".U) & (io.operand1.asSInt >= io.operand2.asSInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+    .elsewhen((io.funct3 === "b110".U) & (io.operand1.asUInt < io.operand2.asUInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+    .elsewhen((io.funct3 === "b111".U) & (io.operand1.asUInt >= io.operand2.asUInt)) {
+      io.taken := true.B
+      io.pc_plus_offset := true.B
+    }
+  }
 }
